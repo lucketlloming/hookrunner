@@ -31,19 +31,23 @@ def run_hook(script: str, args: Optional[List[str]] = None, cwd: Optional[str] =
         The exit code of the hook process.
 
     Raises:
+        FileNotFoundError: If the script does not exist or is not executable.
         HookExecutionError: If the hook exits with a non-zero status.
     """
     cmd = [script] + (args or [])
     cwd = cwd or os.getcwd()
 
-    result = subprocess.run(
-        cmd,
-        cwd=cwd,
-        env=os.environ.copy(),
-        stdout=sys.stdout,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=cwd,
+            env=os.environ.copy(),
+            stdout=sys.stdout,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Hook script not found or not executable: '{script}'")
 
     if result.returncode != 0:
         raise HookExecutionError(script, result.returncode, result.stderr.strip())
@@ -65,6 +69,7 @@ def run_hooks(hooks: List[str], args: Optional[List[str]] = None, cwd: Optional[
         List of hooks that were successfully executed.
 
     Raises:
+        FileNotFoundError: If any hook script does not exist or is not executable.
         HookExecutionError: On the first hook that fails.
     """
     executed = []
