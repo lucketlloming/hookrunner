@@ -40,12 +40,29 @@ def parse_notify_config(config: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     events: List[str] = _parse_list(raw, "events", _VALID_EVENTS, default=list(_VALID_EVENTS))
     channels: List[str] = _parse_list(raw, "channels", _VALID_CHANNELS, default=["stderr"])
 
+    _check_unknown_keys(raw)
+
     return {"enabled": enabled, "events": events, "channels": channels}
 
 
 # ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
+
+def _check_unknown_keys(raw: Dict[str, Any]) -> None:
+    """Warn about unrecognised keys in the notifications block.
+
+    Raises :class:`NotifyConfigError` if any key is not one of the
+    expected ``enabled``, ``events``, or ``channels`` entries.
+    """
+    known_keys = frozenset({"enabled", "events", "channels"})
+    unknown_keys = [k for k in raw if k not in known_keys]
+    if unknown_keys:
+        raise NotifyConfigError(
+            f"'notifications' contains unknown keys: {unknown_keys}. "
+            f"Valid keys: {sorted(known_keys)}"
+        )
+
 
 def _parse_list(
     raw: Dict[str, Any],
